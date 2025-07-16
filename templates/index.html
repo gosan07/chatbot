@@ -1,148 +1,144 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>제주 역사·관광지 챗봇</title>
-  <style>
-    body {
-      max-width: 400px;
-      margin: 40px auto;
-      font-family: "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-      background: #f5f5f5;
-      color: #222;
-    }
+    <meta charset="UTF-8">
+    <title>제주 관광 챗봇</title>
+    <style>
+        body {
+            font-family: 'Helvetica', sans-serif;
+            background: #f0f0f0;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
 
-    #chatbox {
-      background: white;
-      height: 500px;
-      overflow-y: auto;
-      padding: 15px;
-      border-radius: 15px;
-      border: 1px solid #ddd;
-      display: flex;
-      flex-direction: column;
-    }
+        header {
+            background-color: #008080;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.2rem;
+        }
 
-    .chat-entry {
-      margin-bottom: 10px;
-      display: flex;
-      max-width: 80%;
-    }
+        #chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            overflow-y: auto;
+        }
 
-    .user-msg {
-      margin-left: auto;
-      justify-content: flex-end;
-    }
+        .message {
+            margin: 0.5rem 0;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            max-width: 80%;
+            line-height: 1.4;
+        }
 
-    .user-msg span {
-      background: #3b82f6;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 18px 18px 0 18px;
-      font-size: 14px;
-      line-height: 1.4;
-    }
+        .bot {
+            background-color: #e0f7fa;
+            align-self: flex-start;
+        }
 
-    .bot-msg {
-      margin-right: auto;
-      justify-content: flex-start;
-    }
+        .user {
+            background-color: #d1c4e9;
+            align-self: flex-end;
+        }
 
-    .bot-msg span {
-      background: #e5e5e5;
-      color: #333;
-      padding: 8px 12px;
-      border-radius: 18px 18px 18px 0;
-      font-size: 14px;
-      line-height: 1.4;
-    }
+        #input-area {
+            display: flex;
+            padding: 1rem;
+            background-color: #ffffff;
+            border-top: 1px solid #ccc;
+        }
 
-    form {
-      display: flex;
-      margin-top: 10px;
-    }
+        #input-box {
+            flex: 1;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
 
-    input[type="text"] {
-      flex-grow: 1;
-      font-size: 14px;
-      padding: 10px;
-      border-radius: 20px 0 0 20px;
-      border: 1px solid #ccc;
-      border-right: none;
-    }
+        #send-button {
+            margin-left: 10px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            background-color: #008080;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
 
-    button {
-      font-size: 14px;
-      padding: 10px 16px;
-      border-radius: 0 20px 20px 0;
-      border: 1px solid #3b82f6;
-      background: #3b82f6;
-      color: white;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #2563eb;
-      border-color: #2563eb;
-    }
-  </style>
+        #send-button:hover {
+            background-color: #006666;
+        }
+    </style>
 </head>
 <body>
-  <div id="chatbox"></div>
-  <form id="chat-form">
-    <input type="text" id="message" autocomplete="off" placeholder="메시지를 입력하세요..." />
-    <button type="submit">전송</button>
-  </form>
+    <header>제주 관광지 역사 챗봇</header>
 
-  <script>
-    const chatbox = document.getElementById("chatbox");
-    const form = document.getElementById("chat-form");
-    const input = document.getElementById("message");
+    <div id="chat-container">
+        <div class="message bot" id="example-msg">
+            🤖 예시 질문: <br>
+            - 제주 4.3 사건이 뭐야?<br>
+            - 제주 4.3 사건 관련된 관광지 알려줘<br>
+            - 제주4.3평화공원 입장료는 얼마야?<br>
+            - 항일운동 관련된 곳은 어디야?
+        </div>
+    </div>
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const userMsg = input.value.trim();
-      if (!userMsg) return;
+    <div id="input-area">
+        <input type="text" id="input-box" placeholder="질문을 입력해 주세요..." autofocus />
+        <button id="send-button">전송</button>
+    </div>
 
-      appendMessage(userMsg, "user");
-      input.value = "";
-      scrollToBottom();
+    <script>
+        const chatContainer = document.getElementById("chat-container");
+        const inputBox = document.getElementById("input-box");
+        const sendButton = document.getElementById("send-button");
+        const exampleMsg = document.getElementById("example-msg");
+        let firstMessageSent = false;
 
-      // 서버에 메시지 전송
-      try {
-        const res = await fetch("/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ message: userMsg }),
+        function addMessage(text, sender) {
+            const div = document.createElement("div");
+            div.className = "message " + sender;
+            div.innerHTML = text;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = inputBox.value.trim();
+            if (!message) return;
+
+            if (!firstMessageSent) {
+                exampleMsg.remove();  // 예시 메시지 제거
+                firstMessageSent = true;
+            }
+
+            addMessage(message, "user");
+            inputBox.value = "";
+
+            const res = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message })
+            });
+
+            const data = await res.json();
+            addMessage(data.answer.replace(/\n/g, "<br>"), "bot");
+        }
+
+        sendButton.onclick = sendMessage;
+
+        inputBox.addEventListener("keypress", function (e) {
+            if (e.key === "Enter") sendMessage();
         });
-        const data = await res.json();
-        appendMessage(data.answer, "bot");
-        scrollToBottom();
-      } catch (error) {
-        appendMessage("서버와 통신 중 오류가 발생했습니다.", "bot");
-      }
-    });
-
-    function appendMessage(text, sender) {
-      const div = document.createElement("div");
-      div.classList.add("chat-entry");
-      const span = document.createElement("span");
-      span.textContent = text;
-      if (sender === "user") {
-        div.classList.add("user-msg");
-      } else {
-        div.classList.add("bot-msg");
-      }
-      div.appendChild(span);
-      chatbox.appendChild(div);
-    }
-
-    function scrollToBottom() {
-      chatbox.scrollTop = chatbox.scrollHeight;
-    }
-  </script>
+    </script>
 </body>
 </html>
